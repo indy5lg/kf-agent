@@ -1,0 +1,31 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "core"
+readme = "README.md"
+authors = [
+    { name = "Santiago Acosta Rodriguez", email = "sacosta5@students.kennesaw.edu" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "indy-agent",
+    "indy-db",
+    "indy-kf-utils",
+    "uvicorn>=0.52.4",
+]
+
+[project.scripts]
+api = "api:main"
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+indy-db = { workspace = true }
+indy-agent = { workspace = true }
+indy-kf-utils = { workspace = true }
+
+# [build-system]
+# requires = ["uv_build>=0.12.10,<0.13.0"]
+# build-backend = "uv_build"
