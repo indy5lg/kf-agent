@@ -12,6 +12,8 @@ dependencies = [
     "indy-agent",
     "indy-db",
     "indy-kf-utils",
+    "pydantic[email]>=2.0",
+    "python-dotenv>=1.0",
     "uvicorn>=0.52.4",
 ]
 
