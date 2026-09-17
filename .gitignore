@@ -8,3 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local secrets (.env.example is the tracked template)
+.env
+
+# OpenSpec (local-only spec-driven dev tooling, not shared with the team)
+/openspec/
+/.claude/
+
+# Personal Claude Code guardrails (local-only; not everyone on the team uses Claude)
+/CLAUDE.md
