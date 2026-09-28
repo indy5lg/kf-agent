@@ -1,0 +1,115 @@
+.App {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+  min-height: 100vh;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.landing-card {
+  max-width: 600px;
+  width: 100%;
+  border: 3px solid #1D9E75;
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.project-name {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.project-description {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+  margin: 0 0 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.login-form input {
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.login-form input:focus {
+  outline: 2px solid #1D9E75;
+  border-color: transparent;
+}
+
+.login-button {
+  font-size: 16px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #1D9E75;
+  color: #fff;
+  cursor: pointer;
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-button.secondary {
+  margin-top: 20px;
+  background: transparent;
+  color: #1D9E75;
+  border: 1px solid #1D9E75;
+}
+
+.error-message {
+  color: #c0392b;
+  font-size: 14px;
+}
+
+.file-input {
+  display: block;
+  margin: 0 auto 12px;
+  font-size: 15px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #555;
+}
+
+.team-section {
+  border-top: 1px solid #ddd;
+  padding-top: 20px;
+}
+
+.team-label {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 10px;
+}
+
+.team-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.team-badge {
+  background: #E1F5EE;
+  color: #0F6E56;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
