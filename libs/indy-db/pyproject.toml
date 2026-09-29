@@ -7,7 +7,10 @@ authors = [
     { name = "Santiago Acosta Rodriguez", email = "sacosta5@students.kennesaw.edu" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
