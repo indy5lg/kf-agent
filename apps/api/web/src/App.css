@@ -7,20 +7,127 @@
   box-sizing: border-box;
 }
 
-.landing-card {
-  max-width: 600px;
+.page-card {
+  max-width: 640px;
   width: 100%;
   border: 3px solid #1D9E75;
-  border-radius: 12px;
-  padding: 2.5rem;
-  text-align: center;
+  border-radius: 16px;
+  padding: 2rem;
   box-sizing: border-box;
+  background: var(--card-bg);
+}
+
+.page-card.narrow {
+  max-width: 400px;
+  text-align: center;
+}
+
+.member-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.member-box {
+  flex: 1 1 auto;
+  min-width: 100px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--segment-bg);
+  color: var(--text-h);
+}
+
+.center-box {
+  border-radius: 14px;
+  background: var(--segment-bg);
+  padding: 1.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.slideshow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.slide-content {
+  flex: 1;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.slide-title {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.slide-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+
+.slide-arrow {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-h);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.slide-arrow:hover {
+  background: var(--card-bg);
+}
+
+.slide-dots {
+  position: absolute;
+  margin-top: 90px;
+}
+
+.center-box {
+  position: relative;
+}
+
+.slide-dots {
+  position: static;
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.slide-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.slide-dot.active {
+  background: #1D9E75;
 }
 
 .project-name {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 
 .project-description {
@@ -34,15 +141,17 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .login-form input {
   font-size: 16px;
   padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   box-sizing: border-box;
+  background: var(--card-bg);
+  color: var(--text-h);
 }
 
 .login-form input:focus {
@@ -52,12 +161,13 @@
 
 .login-button {
   font-size: 16px;
-  padding: 10px 12px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #1D9E75;
   color: #fff;
   cursor: pointer;
+  width: 100%;
 }
 
 .login-button:disabled {
@@ -66,7 +176,7 @@
 }
 
 .login-button.secondary {
-  margin-top: 20px;
+  margin-top: 16px;
   background: transparent;
   color: #1D9E75;
   border: 1px solid #1D9E75;
@@ -85,31 +195,5 @@
 
 .file-name {
   font-size: 14px;
-  color: #555;
-}
-
-.team-section {
-  border-top: 1px solid #ddd;
-  padding-top: 20px;
-}
-
-.team-label {
-  font-size: 13px;
-  color: #888;
-  margin: 0 0 10px;
-}
-
-.team-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
-.team-badge {
-  background: #E1F5EE;
-  color: #0F6E56;
-  font-size: 14px;
-  padding: 6px 14px;
-  border-radius: 20px;
+  color: var(--text);
 }
