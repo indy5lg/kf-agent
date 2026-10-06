@@ -10,7 +10,7 @@ export default function LoginPage() {
   async function handleLogin(email: string, password: string) {
     try {
       await login(email, password);
-      router.push("/");
+      router.push("/chat");
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         throw new Error("Invalid email or password.");

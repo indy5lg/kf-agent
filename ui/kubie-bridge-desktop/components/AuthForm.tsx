@@ -51,7 +51,7 @@ export function AuthForm({
             K
           </span>
           <span className="text-lg font-semibold text-black dark:text-zinc-50">
-            Kubie
+            Kubie-Bridge
           </span>
         </div>
         <h1 className="text-xl font-semibold text-black dark:text-zinc-50">

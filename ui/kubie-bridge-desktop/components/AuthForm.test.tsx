@@ -19,7 +19,7 @@ function renderAuthForm(onSubmit = vi.fn().mockResolvedValue(undefined)) {
 describe("AuthForm branding", () => {
   it("renders the Kubie wordmark in its branding header", () => {
     renderAuthForm();
-    expect(screen.getByText("Kubie")).toBeInTheDocument();
+    expect(screen.getByText("Kubie-Bridge")).toBeInTheDocument();
   });
 
   it("renders a placeholder mark alongside the Kubie wordmark", () => {
