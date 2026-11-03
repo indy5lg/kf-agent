@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# LangGraph local development runtime state
+/.langgraph_api/
+
 # Local secrets (.env.example is the tracked template)
 .env
 
@@ -18,3 +21,4 @@ wheels/
 
 # Personal Claude Code guardrails (local-only; not everyone on the team uses Claude)
 /CLAUDE.md
+.agents/

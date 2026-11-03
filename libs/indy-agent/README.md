@@ -1,0 +1,81 @@
+# indy-agent
+
+Standalone LangGraph workflow for converting hardcoded ML-script artifact paths into
+an inspectable argparse contract for later Kubeflow Pipelines work.
+
+## Setup
+
+From the repository root, install the uv-managed workspace environment:
+
+```bash
+uv sync
+```
+
+Copy `.env.example` to `.env` inside this directory and configure an Ollama endpoint
+when it is not available at `http://localhost:11434`:
+
+```dotenv
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma4:e4b
+```
+
+LangSmith is optional. The graph runs without LangSmith credentials; add the normal
+LangSmith environment variables only when tracing is desired.
+
+## Run tests
+
+```bash
+uv run --project libs/indy-agent pytest libs/indy-agent/tests
+```
+
+The Ollama integration test is skipped unless explicitly requested. It also skips if
+the configured endpoint or model is unavailable:
+
+```bash
+RUN_OLLAMA_INTEGRATION=1 uv run --project libs/indy-agent pytest libs/indy-agent/tests -m integration
+```
+
+## Run the local agent server
+
+```bash
+uv run --project libs/indy-agent langgraph dev --config libs/indy-agent/langgraph.json
+```
+
+### Compare Ollama requests from Studio and pytest
+
+For local debugging, set `OLLAMA_DEBUG_CAPTURE_DIR` before starting the server
+or running pytest. Each model call writes a JSON file containing the complete
+prompt, structured-output schema, Ollama request options, and parsed proposal.
+The captured script may contain sensitive code, so use a local directory that
+is not committed to Git.
+
+```bash
+OLLAMA_DEBUG_CAPTURE_DIR=/tmp/indy-agent-ollama-captures \
+OLLAMA_DEBUG_CAPTURE_LABEL=studio \
+uv run --project libs/indy-agent langgraph dev --config libs/indy-agent/langgraph.json
+```
+
+In another terminal, run the integration test with a different label:
+
+```bash
+RUN_OLLAMA_INTEGRATION=1 \
+OLLAMA_DEBUG_CAPTURE_DIR=/tmp/indy-agent-ollama-captures \
+OLLAMA_DEBUG_CAPTURE_LABEL=pytest \
+uv run --project libs/indy-agent pytest libs/indy-agent/tests -m integration -v
+```
+
+Compare the resulting `ollama-request-*.json` files. The `ollama_request`
+object is the complete request assembled by LangChain immediately before the
+Ollama client sends it.
+
+The published graph is `script_refactoring`. Invoke it with raw Python source:
+
+```json
+{
+  "source_script": "import torch\\n..."
+}
+```
+
+The result includes a terminal `status`, structured errors when applicable, the
+successful transformed source and diff, plus KFP-aligned artifact metadata using
+`dataset`, `model`, `metrics`, or `artifact`.

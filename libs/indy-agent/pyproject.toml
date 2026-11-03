@@ -7,8 +7,18 @@ authors = [
     { name = "Santiago Acosta Rodriguez", email = "sacosta5@students.kennesaw.edu" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "langchain-ollama>=1.1.0",
+    "langgraph>=1.2.16",
+    "pydantic>=2.13.5",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "langgraph-cli[inmem]>=0.4.37",
+    "pytest>=9.1.1",
+]
