@@ -56,8 +56,20 @@ def _replace_spans(
     return transformed
 
 
-def apply_edits(source_script: str, edits: list[Edit]) -> tuple[str, str]:
-    """Apply validated, non-overlapping replacements or raise without mutation."""
+def create_diff(before_script: str, after_script: str) -> str:
+    """Return a readable unified diff between two in-memory script versions."""
+    return "".join(
+        unified_diff(
+            before_script.splitlines(keepends=True),
+            after_script.splitlines(keepends=True),
+            fromfile="original.py",
+            tofile="refactored.py",
+        )
+    )
+
+
+def apply_edits(working_script: str, edits: list[Edit]) -> tuple[str, str]:
+    """Apply a batch to the current working script or raise without mutation."""
     conflict = _find_conflict(edits)
     if conflict is not None:
         raise EditApplicationError(
@@ -67,7 +79,7 @@ def apply_edits(source_script: str, edits: list[Edit]) -> tuple[str, str]:
 
     edit_spans: list[list[tuple[int, int]]] = []
     for index, edit in enumerate(edits):
-        spans = _match_spans(source_script, edit.old_text)
+        spans = _match_spans(working_script, edit.old_text)
         actual_matches = len(spans)
         if actual_matches != edit.expected_matches:
             raise EditApplicationError(
@@ -85,14 +97,5 @@ def apply_edits(source_script: str, edits: list[Edit]) -> tuple[str, str]:
         for edit, spans in zip(edits, edit_spans, strict=True)
         for start, end in spans
     ]
-    transformed = _replace_spans(source_script, replacements)
-
-    diff = "".join(
-        unified_diff(
-            source_script.splitlines(keepends=True),
-            transformed.splitlines(keepends=True),
-            fromfile="original.py",
-            tofile="refactored.py",
-        )
-    )
-    return transformed, diff
+    transformed = _replace_spans(working_script, replacements)
+    return transformed, create_diff(working_script, transformed)

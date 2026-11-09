@@ -76,7 +76,16 @@ The published graph is `script_refactoring`. Invoke it with raw Python source:
 }
 ```
 
-The result includes a terminal `status`, structured errors when applicable, and,
-on success, the transformed source and diff. Its `proposal` contains the complete
-artifact contract at `proposal.artifacts`, using `dataset`, `model`, `metrics`,
-or `artifact`; there are no top-level `artifacts` or `changes` result fields.
+The result includes a terminal `status`, structured errors when applicable, and
+the latest in-memory `working_script`. Only `status: success` marks that script
+as usable. `diff` always compares the immutable source with the latest working
+script; `diff_trace` records the bounded initial proposal and optional repair
+patch outcomes. Its `proposal` contains the complete artifact contract at
+`proposal.artifacts`, using `dataset`, `model`, `metrics`, or `artifact`; there
+are no top-level `artifacts` or `changes` result fields.
+
+When deterministic proposal, edit, syntax, or artifact-contract validation
+fails, the graph may request one repair proposal. The repair receives the
+original source as reference, the current working script as its only edit
+target, the current artifact contract, and the structured failure. Ollama
+service failures and `no_artifacts_found` are terminal and are not retried.

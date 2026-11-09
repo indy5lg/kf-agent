@@ -35,8 +35,9 @@ def _diagnostic_report(
             f"  terminal_status: {result.get('status')}",
             "  error:\n" + json.dumps(error_data, indent=2, sort_keys=True),
             "  proposal:\n" + json.dumps(proposal_data, indent=2, sort_keys=True),
-            "  refactored_script:\n" + repr(result.get("refactored_script")),
+            "  working_script:\n" + repr(result.get("working_script")),
             "  diff:\n" + repr(result.get("diff")),
+            "  diff_trace:\n" + repr([entry.model_dump(mode="json") for entry in result.get("diff_trace", [])]),
         )
     )
 
@@ -78,7 +79,9 @@ def test_sample_script_refactors_with_configured_ollama() -> None:
     ), diagnostic
     for artifact in proposal.artifacts:
         destination = artifact.cli_argument.removeprefix("--").replace("-", "_")
-        assert f"args.{destination}" in result["refactored_script"], diagnostic
+        assert f"args.{destination}" in result["working_script"], diagnostic
     assert "artifacts" not in result, diagnostic
     assert "changes" not in result, diagnostic
     assert result["diff"], diagnostic
+    assert result["diff_trace"], diagnostic
+    assert "refactored_script" not in result, diagnostic

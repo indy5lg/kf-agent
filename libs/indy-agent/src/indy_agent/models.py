@@ -31,10 +31,15 @@ class RefactorStatus(StrEnum):
     INVALID_CONTRACT = "invalid_contract"
 
 
+class AttemptKind(StrEnum):
+    INITIAL = "initial"
+    REPAIR = "repair"
+
+
 class Edit(BaseModel):
-    old_text: str = Field(min_length=1, description="Exact non-empty source text to replace.")
+    old_text: str = Field(min_length=1, description="Exact non-empty text from the current working script to replace.")
     new_text: str = Field(description="Replacement source text; all generated Python belongs here.")
-    expected_matches: int = Field(ge=1, description="Required count of exact matches in the original source.")
+    expected_matches: int = Field(ge=1, description="Required count of exact matches in the current working script.")
     purpose: str = Field(min_length=1, description="Concise explanation of this concrete edit.")
 
 
@@ -47,12 +52,12 @@ class Artifact(BaseModel):
 
 
 class Proposal(BaseModel):
-    """The complete model-authored refactoring decision."""
+    """The next model-authored edit batch and complete artifact contract."""
 
     model_config = ConfigDict(extra="forbid")
 
-    edits: list[Edit] = Field(description="All proposed source changes as exact replacements.")
-    artifacts: list[Artifact] = Field(description="The artifact contract for the proposed edits.")
+    edits: list[Edit] = Field(description="Exact replacements targeting the current working script.")
+    artifacts: list[Artifact] = Field(description="The complete current artifact contract for this edit batch.")
 
     @model_validator(mode="after")
     def validate_artifacts(self) -> Proposal:
@@ -71,10 +76,26 @@ class RefactorError(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
 
 
+class DiffTraceEntry(BaseModel):
+    """One bounded proposal attempt and its deterministic outcome."""
+
+    attempt_number: int = Field(ge=1)
+    kind: AttemptKind
+    proposal: Proposal | None = None
+    feedback: RefactorError | None = None
+    patch_diff: str | None = None
+    outcome: RefactorStatus
+    error: RefactorError | None = None
+
+
 class RefactorState(TypedDict, total=False):
     source_script: str
+    working_script: str
     proposal: Proposal | None
-    refactored_script: str | None
     diff: str | None
+    diff_trace: list[DiffTraceEntry]
+    attempt_count: int
+    attempt_kind: AttemptKind
+    repair_feedback: RefactorError | None
     status: RefactorStatus
     error: RefactorError | None

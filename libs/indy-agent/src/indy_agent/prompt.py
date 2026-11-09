@@ -1,4 +1,4 @@
-"""Prompt for the single bounded model call in the workflow."""
+"""Prompts for the bounded initial and repair model calls."""
 
 SYSTEM_PROMPT = """You modify one Python ML script only at filesystem artifact boundaries.
 
@@ -18,3 +18,34 @@ Every edit must use non-empty, non-overlapping old_text copied exactly from the 
 Preserve all unrelated behavior. Do not repair bugs, alter ML logic or hyperparameters, or add directory creation.
 
 If no supported artifact I/O is found, return empty edits and artifacts lists."""
+
+
+def repair_prompt(
+    *,
+    source_script: str,
+    working_script: str,
+    artifacts: list[dict[str, object]],
+    error: dict[str, object],
+) -> str:
+    """Build focused repair context without stale proposal edits or trace data."""
+    import json
+
+    return f"""You are repairing a previous transformation attempt. Return only the structured Proposal response.
+
+ORIGINAL SOURCE (reference only; never use it as an edit target):
+```python
+{source_script}
+```
+
+CURRENT WORKING SCRIPT (every edits[].old_text value must match this script exactly):
+```python
+{working_script}
+```
+
+CURRENT ARTIFACT CONTRACT (return a complete corrected list; preserve it unless a correction requires changing it):
+{json.dumps(artifacts, ensure_ascii=False)}
+
+DETERMINISTIC FAILURE TO CORRECT:
+{json.dumps(error, ensure_ascii=False)}
+
+Make only the exact edits needed to correct the reported failure while preserving valid existing behavior. Artifact contract values and generated code must match exactly, character for character; for example, "_" and "-" are different characters. For every repair edit, old_text must be a meaningful, non-whitespace code or import block copied exactly from CURRENT WORKING SCRIPT. Never use an empty, whitespace-only, or newline-only anchor such as "\\n". For an insertion, replace one complete adjacent code or import line, including its trailing newline when possible, and set expected_matches to that anchor's exact count in CURRENT WORKING SCRIPT. Do not repeat already-applied edits, return Markdown, include prior edit lists, include prior diffs, or include stack traces."""

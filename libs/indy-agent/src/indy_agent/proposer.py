@@ -12,8 +12,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 from pydantic import ValidationError
 
-from indy_agent.models import Proposal
-from indy_agent.prompt import SYSTEM_PROMPT
+from indy_agent.models import Artifact, RefactorError, Proposal
+from indy_agent.prompt import SYSTEM_PROMPT, repair_prompt
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 DEFAULT_OLLAMA_MODEL = "gemma4:e4b"
@@ -39,8 +39,8 @@ def _write_debug_capture(payload: dict[str, object]) -> None:
     capture_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str))
 
 
-def request_proposal(source_script: str) -> Proposal:
-    """Make the workflow's only model call and coerce its structured response."""
+def _request_proposal(messages: list[SystemMessage | HumanMessage], *, request_kind: str) -> Proposal:
+    """Make one structured model call and optionally capture its diagnostics."""
     base_url = os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL)
     model_name = os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL)
     model = ChatOllama(
@@ -48,13 +48,13 @@ def request_proposal(source_script: str) -> Proposal:
         base_url=base_url,
         temperature=0,
     )
-    messages = [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=source_script)]
     # This is the request dictionary ChatOllama hands to its Ollama client. The
     # structured-output helper below binds this same Pydantic JSON schema as
     # the `format` request parameter.
     capture: dict[str, object] = {
         "captured_at": datetime.now(UTC).isoformat(),
         "label": os.getenv(DEBUG_CAPTURE_LABEL_ENV),
+        "request_kind": request_kind,
         "base_url": base_url,
         "model": model_name,
         "ollama_request": model._chat_params(  # noqa: SLF001 - diagnostic capture of library request payload
@@ -82,3 +82,35 @@ def request_proposal(source_script: str) -> Proposal:
     capture["parsed_response"] = proposal.model_dump(mode="json")
     _write_debug_capture(capture)
     return proposal
+
+
+def request_proposal(source_script: str) -> Proposal:
+    """Generate the initial proposal against the source-backed working script."""
+    return _request_proposal(
+        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=source_script)],
+        request_kind="initial",
+    )
+
+
+def request_repair(
+    *,
+    source_script: str,
+    working_script: str,
+    artifacts: list[Artifact],
+    error: RefactorError,
+) -> Proposal:
+    """Generate a repair batch against the current working script."""
+    return _request_proposal(
+        [
+            SystemMessage(content=SYSTEM_PROMPT),
+            HumanMessage(
+                content=repair_prompt(
+                    source_script=source_script,
+                    working_script=working_script,
+                    artifacts=[artifact.model_dump(mode="json") for artifact in artifacts],
+                    error=error.model_dump(mode="json"),
+                )
+            ),
+        ],
+        request_kind="repair",
+    )
