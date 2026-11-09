@@ -76,6 +76,7 @@ The published graph is `script_refactoring`. Invoke it with raw Python source:
 }
 ```
 
-The result includes a terminal `status`, structured errors when applicable, the
-successful transformed source and diff, plus KFP-aligned artifact metadata using
-`dataset`, `model`, `metrics`, or `artifact`.
+The result includes a terminal `status`, structured errors when applicable, and,
+on success, the transformed source and diff. Its `proposal` contains the complete
+artifact contract at `proposal.artifacts`, using `dataset`, `model`, `metrics`,
+or `artifact`; there are no top-level `artifacts` or `changes` result fields.

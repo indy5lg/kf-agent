@@ -8,7 +8,7 @@ from urllib.request import urlopen
 import pytest
 
 from indy_agent.graph import graph
-from indy_agent.models import RefactorStatus
+from indy_agent.models import ArtifactDirection, ArtifactKind, RefactorStatus
 from indy_agent.proposer import DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_MODEL
 
 
@@ -66,7 +66,19 @@ def test_sample_script_refactors_with_configured_ollama() -> None:
     )
 
     assert result["status"] == RefactorStatus.SUCCESS, diagnostic
-    assert {artifact.name for artifact in result["artifacts"]} >= {"dataset", "model"}, diagnostic
-    assert "args.dataset_path" in result["refactored_script"], diagnostic
-    assert "args.model_path" in result["refactored_script"], diagnostic
+    proposal = result["proposal"]
+    assert proposal is not None, diagnostic
+    assert any(
+        artifact.direction == ArtifactDirection.INPUT and artifact.kind == ArtifactKind.DATASET
+        for artifact in proposal.artifacts
+    ), diagnostic
+    assert any(
+        artifact.direction == ArtifactDirection.OUTPUT and artifact.kind == ArtifactKind.MODEL
+        for artifact in proposal.artifacts
+    ), diagnostic
+    for artifact in proposal.artifacts:
+        destination = artifact.cli_argument.removeprefix("--").replace("-", "_")
+        assert f"args.{destination}" in result["refactored_script"], diagnostic
+    assert "artifacts" not in result, diagnostic
+    assert "changes" not in result, diagnostic
     assert result["diff"], diagnostic

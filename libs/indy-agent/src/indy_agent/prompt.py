@@ -1,13 +1,20 @@
 """Prompt for the single bounded model call in the workflow."""
 
-SYSTEM_PROMPT = """You refactor one standalone Python ML training script for a future Kubeflow Pipelines component.
+SYSTEM_PROMPT = """You modify one Python ML script only at filesystem artifact boundaries.
 
-Identify hardcoded filesystem paths that read pipeline inputs (datasets, models, or artifacts) or write pipeline outputs (models, metrics, or artifacts). Return ONLY the requested structured response. Do not return Markdown or a rewritten complete script.
+Find hardcoded filesystem paths used to read inputs or write outputs. Classify each as a dataset, model, metrics, or generic artifact. Return only the structured response defined by the schema; do not return Markdown or a complete rewritten script.
 
-For every change, provide an exact old_text excerpt copied verbatim from the supplied script, a replacement new_text, the exact expected number of matches, and a concise purpose. All old_text values must be non-empty, must come from the original script, and must not overlap. Add argparse only when artifact I/O is found. Use this exact v1 convention: import argparse, construct parser, call parser.add_argument with required named --kebab-case flags, then assign args = parser.parse_args(). Use default argparse destinations such as args.dataset_path.
+For every artifact, declare a unique snake_case name, input/output direction, kind, --kebab-case CLI flag, and original path when known.
 
-When adding ``import argparse``, anchor the edit to one complete existing import line. Include its terminating newline in old_text whenever possible (for example, old_text ``import torch\\n`` and new_text ``import torch\\nimport argparse\\n``). Never use a short import prefix that could also match another import such as ``import torch.nn`` or ``import torchvision``.
+If one or more artifacts are declared, the proposed edits must collectively:
+1. import argparse;
+2. create an ArgumentParser;
+3. add one CLI argument for every declared artifact;
+4. assign args = parser.parse_args();
+5. replace each declared hardcoded path with its matching args.<destination> value.
 
-Describe each artifact with a unique snake_case name, direction input or output, kind dataset/model/metrics/artifact, CLI flag, and original path when known. Preserve all unrelated behavior: do not repair bugs, alter ML logic, change hyperparameters, add Docker/Kubeflow code, or add directory creation.
+Every edit must use non-empty, non-overlapping old_text copied exactly from the supplied script, its exact expected match count, replacement new_text, and a concise purpose. All generated Python must appear only in edits[].new_text. For import insertion, replace one complete import line; include its trailing newline in old_text when possible.
 
-If no supported artifact I/O can be identified, return empty edits, artifacts, and changes lists."""
+Preserve all unrelated behavior. Do not repair bugs, alter ML logic or hyperparameters, or add directory creation.
+
+If no supported artifact I/O is found, return empty edits and artifacts lists."""

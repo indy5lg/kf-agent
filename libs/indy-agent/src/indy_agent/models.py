@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, TypedDict
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ArtifactDirection(StrEnum):
@@ -32,10 +32,10 @@ class RefactorStatus(StrEnum):
 
 
 class Edit(BaseModel):
-    old_text: str = Field(min_length=1)
-    new_text: str
-    expected_matches: int = Field(ge=1)
-    purpose: str = Field(min_length=1)
+    old_text: str = Field(min_length=1, description="Exact non-empty source text to replace.")
+    new_text: str = Field(description="Replacement source text; all generated Python belongs here.")
+    expected_matches: int = Field(ge=1, description="Required count of exact matches in the original source.")
+    purpose: str = Field(min_length=1, description="Concise explanation of this concrete edit.")
 
 
 class Artifact(BaseModel):
@@ -47,9 +47,12 @@ class Artifact(BaseModel):
 
 
 class Proposal(BaseModel):
-    edits: list[Edit]
-    artifacts: list[Artifact]
-    changes: list[str]
+    """The complete model-authored refactoring decision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    edits: list[Edit] = Field(description="All proposed source changes as exact replacements.")
+    artifacts: list[Artifact] = Field(description="The artifact contract for the proposed edits.")
 
     @model_validator(mode="after")
     def validate_artifacts(self) -> Proposal:
@@ -73,7 +76,5 @@ class RefactorState(TypedDict, total=False):
     proposal: Proposal | None
     refactored_script: str | None
     diff: str | None
-    artifacts: list[Artifact]
-    changes: list[str]
     status: RefactorStatus
     error: RefactorError | None

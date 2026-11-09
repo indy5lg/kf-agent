@@ -39,16 +39,14 @@ def propose_edits(state: RefactorState) -> dict:
         )
 
     if not proposal.artifacts:
-        if proposal.edits or proposal.changes:
+        if proposal.edits:
             return _error(
                 RefactorStatus.INVALID_AGENT_RESPONSE,
                 "propose_edits",
-                "A proposal without artifacts must not include edits or changes.",
+                "A proposal without artifacts must not include edits.",
             )
         return {
             "proposal": proposal,
-            "artifacts": [],
-            "changes": [],
             "status": RefactorStatus.NO_ARTIFACTS_FOUND,
             "error": None,
         }
@@ -60,8 +58,6 @@ def propose_edits(state: RefactorState) -> dict:
         )
     return {
         "proposal": proposal,
-        "artifacts": proposal.artifacts,
-        "changes": proposal.changes,
         "status": RefactorStatus.PENDING,
         "error": None,
     }
@@ -85,8 +81,10 @@ def apply_proposed_edits(state: RefactorState) -> dict:
 def validate_result(state: RefactorState) -> dict:
     refactored_script = state["refactored_script"]
     assert refactored_script is not None
+    proposal = state["proposal"]
+    assert proposal is not None
     try:
-        validate_refactored_script(refactored_script, state.get("artifacts", []))
+        validate_refactored_script(refactored_script, proposal.artifacts)
     except SourceValidationError as error:
         return {
             **_error(

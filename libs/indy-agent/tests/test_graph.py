@@ -24,7 +24,6 @@ def successful_proposal() -> Proposal:
                 {"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"},
                 {"name": "model", "direction": "output", "kind": "model", "cli_argument": "--model-path"},
             ],
-            "changes": ["parameterized paths"],
         }
     )
 
@@ -34,10 +33,13 @@ def test_graph_success(monkeypatch: pytest.MonkeyPatch) -> None:
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.SUCCESS
     assert "args.dataset_path" in result["refactored_script"]
+    assert {artifact.name for artifact in result["proposal"].artifacts} == {"dataset", "model"}
+    assert "artifacts" not in result
+    assert "changes" not in result
 
 
 def test_graph_short_circuits_when_no_artifacts(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: Proposal(edits=[], artifacts=[], changes=[]))
+    monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: Proposal(edits=[], artifacts=[]))
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.NO_ARTIFACTS_FOUND
     assert "refactored_script" not in result
@@ -46,8 +48,8 @@ def test_graph_short_circuits_when_no_artifacts(monkeypatch: pytest.MonkeyPatch)
 @pytest.mark.parametrize(
     "proposal,status",
     [
-        (Proposal.model_validate({"edits": [{"old_text": "missing", "new_text": "x", "expected_matches": 1, "purpose": "bad"}], "artifacts": [{"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"}], "changes": ["bad"]}), RefactorStatus.EDIT_FAILURE),
-        (Proposal.model_validate({"edits": [{"old_text": "import torch\n", "new_text": "if True print('bad')\n", "expected_matches": 1, "purpose": "bad"}], "artifacts": [{"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"}], "changes": ["bad"]}), RefactorStatus.INVALID_CODE),
+        (Proposal.model_validate({"edits": [{"old_text": "missing", "new_text": "x", "expected_matches": 1, "purpose": "bad"}], "artifacts": [{"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"}]}), RefactorStatus.EDIT_FAILURE),
+        (Proposal.model_validate({"edits": [{"old_text": "import torch\n", "new_text": "if True print('bad')\n", "expected_matches": 1, "purpose": "bad"}], "artifacts": [{"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"}]}), RefactorStatus.INVALID_CODE),
     ],
 )
 def test_graph_short_circuits_after_failure(monkeypatch: pytest.MonkeyPatch, proposal: Proposal, status: RefactorStatus) -> None:
@@ -73,7 +75,6 @@ def test_graph_reports_invalid_contract_after_successful_edit(monkeypatch: pytes
                 {"old_text": "'./data'", "new_text": "args.dataset_path", "expected_matches": 1, "purpose": "input"},
             ],
             "artifacts": [{"name": "dataset", "direction": "input", "kind": "dataset", "cli_argument": "--dataset-path"}],
-            "changes": ["bad contract"],
         }
     )
     monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: proposal)
