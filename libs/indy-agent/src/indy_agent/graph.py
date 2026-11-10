@@ -19,7 +19,7 @@ from indy_agent.models import (
 from indy_agent.proposer import request_proposal, request_repair
 from indy_agent.validation import SourceValidationError, validate_refactored_script
 
-MAX_PROPOSAL_ATTEMPTS = 2
+MAX_PROPOSAL_ATTEMPTS = 4
 RETRYABLE_STATUSES = {
     RefactorStatus.INVALID_AGENT_RESPONSE,
     RefactorStatus.EDIT_FAILURE,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 
-from indy_agent.models import Artifact
+from indy_agent.models import Artifact, ValidationViolation, ValidationViolationCode
 
 
 @dataclass(frozen=True)
@@ -55,20 +55,32 @@ def validate_refactored_script(source_script: str, artifacts: list[Artifact]) ->
         ) from error
 
     has_import, flags, destinations, parses_args = _collect_argparse_evidence(tree)
+    violations: list[ValidationViolation] = []
     if artifacts and not has_import:
-        raise SourceValidationError("Generated script does not import argparse.", {})
+        violations.append(ValidationViolation(code=ValidationViolationCode.MISSING_ARGPARSE_IMPORT))
     if artifacts and not parses_args:
-        raise SourceValidationError("Generated script does not call parse_args().", {})
+        violations.append(ValidationViolation(code=ValidationViolationCode.MISSING_PARSE_ARGS))
 
     for artifact in artifacts:
         destination = artifact.cli_argument.removeprefix("--").replace("-", "_")
         if artifact.cli_argument not in flags:
-            raise SourceValidationError(
-                "Declared artifact CLI argument is not defined by argparse.",
-                {"artifact": artifact.name, "missing_cli_argument": artifact.cli_argument},
+            violations.append(
+                ValidationViolation(
+                    code=ValidationViolationCode.MISSING_CLI_ARGUMENT,
+                    artifact=artifact.name,
+                    expected_cli_argument=artifact.cli_argument,
+                )
             )
         if destination not in destinations:
-            raise SourceValidationError(
-                "Declared artifact destination is not used through args.",
-                {"artifact": artifact.name, "missing_destination": f"args.{destination}"},
+            violations.append(
+                ValidationViolation(
+                    code=ValidationViolationCode.MISSING_ARGUMENT_DESTINATION,
+                    artifact=artifact.name,
+                    expected_destination=f"args.{destination}",
+                )
             )
+    if violations:
+        raise SourceValidationError(
+            "Generated script does not satisfy the artifact contract.",
+            {"violations": [violation.model_dump(mode="json", exclude_none=True) for violation in violations]},
+        )

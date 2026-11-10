@@ -36,6 +36,24 @@ class AttemptKind(StrEnum):
     REPAIR = "repair"
 
 
+class ValidationViolationCode(StrEnum):
+    MISSING_ARGPARSE_IMPORT = "missing_argparse_import"
+    MISSING_PARSE_ARGS = "missing_parse_args"
+    MISSING_CLI_ARGUMENT = "missing_cli_argument"
+    MISSING_ARGUMENT_DESTINATION = "missing_argument_destination"
+
+
+class ValidationViolation(BaseModel):
+    """One independently detectable mismatch in the generated argparse contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: ValidationViolationCode
+    artifact: str | None = None
+    expected_cli_argument: str | None = None
+    expected_destination: str | None = None
+
+
 class Edit(BaseModel):
     old_text: str = Field(min_length=1, description="Exact non-empty text from the current working script to replace.")
     new_text: str = Field(description="Replacement source text; all generated Python belongs here.")

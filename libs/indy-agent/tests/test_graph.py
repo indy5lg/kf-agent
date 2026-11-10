@@ -73,8 +73,15 @@ def test_graph_short_circuits_when_no_artifacts(monkeypatch: pytest.MonkeyPatch)
 
 def test_graph_repairs_missing_argparse_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
+    repair_feedback = []
     monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: calls.append("initial") or proposal(include_flags=False))
-    monkeypatch.setattr("indy_agent.graph.request_repair", lambda **_: calls.append("repair") or repair_parser_proposal())
+
+    def repair(**kwargs):
+        calls.append("repair")
+        repair_feedback.append(kwargs["error"])
+        return repair_parser_proposal()
+
+    monkeypatch.setattr("indy_agent.graph.request_repair", repair)
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.SUCCESS
     assert calls == ["initial", "repair"]
@@ -83,6 +90,12 @@ def test_graph_repairs_missing_argparse_contract(monkeypatch: pytest.MonkeyPatch
     assert [entry.outcome for entry in result["diff_trace"]] == [RefactorStatus.INVALID_CONTRACT, RefactorStatus.SUCCESS]
     assert "parser.add_argument('--dataset-path')" in result["working_script"]
     assert "-root = './data'" in result["diff"]
+    assert repair_feedback[0].details == {
+        "violations": [
+            {"code": "missing_cli_argument", "artifact": "dataset", "expected_cli_argument": "--dataset-path"},
+            {"code": "missing_cli_argument", "artifact": "model", "expected_cli_argument": "--model-path"},
+        ]
+    }
 
 
 def test_graph_preserves_invalid_candidate_when_repair_budget_is_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -95,11 +108,20 @@ def test_graph_preserves_invalid_candidate_when_repair_budget_is_exhausted(monke
     monkeypatch.setattr("indy_agent.graph.request_repair", lambda **_: calls.append("repair") or bad_repair)
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.INVALID_CONTRACT
-    assert result["attempt_count"] == 2
+    assert result["attempt_count"] == 4
     assert "args.dataset_path" in result["working_script"]
-    assert len(result["diff_trace"]) == 2
+    assert len(result["diff_trace"]) == 4
     assert result["diff_trace"][-1].outcome == RefactorStatus.INVALID_CONTRACT
-    assert calls == ["initial", "repair"]
+    assert calls == ["initial", "repair", "repair", "repair"]
+    assert result["error"].stage == "validate_result"
+    assert result["error"].message == "Generated script does not satisfy the artifact contract."
+    assert result["error"].details == {
+        "violations": [
+            {"code": "missing_cli_argument", "artifact": "dataset", "expected_cli_argument": "--dataset-path"},
+            {"code": "missing_cli_argument", "artifact": "model", "expected_cli_argument": "--model-path"},
+        ]
+    }
+    assert result["diff_trace"][-1].error == result["error"]
 
 
 def test_invalid_python_candidate_is_repaired(monkeypatch: pytest.MonkeyPatch) -> None:
