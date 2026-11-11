@@ -11,10 +11,32 @@ def test_apply_edits_returns_transformed_source_and_diff() -> None:
     assert "+path = args.dataset_path" in diff
 
 
-@pytest.mark.parametrize("expected_matches", [1, 3])
-def test_apply_edits_rejects_incorrect_match_count(expected_matches: int) -> None:
-    with pytest.raises(EditApplicationError):
-        apply_edits("value = 'data'\nvalue = 'data'\n", [Edit(old_text="'data'", new_text="args.path", expected_matches=expected_matches, purpose="parameterize")])
+@pytest.mark.parametrize(
+    "source,edit,expected_details",
+    [
+        (
+            "value = 'data'\nvalue = 'data'\n",
+            Edit(old_text="'data'", new_text="args.path", expected_matches=1, purpose="parameterize"),
+            {"edit_index": 0, "expected_matches": 1, "actual_matches": 2},
+        ),
+        (
+            "value = 'data'\nvalue = 'data'\n",
+            Edit(old_text="'data'", new_text="args.path", expected_matches=3, purpose="parameterize"),
+            {"edit_index": 0, "expected_matches": 3, "actual_matches": 2},
+        ),
+        (
+            "value = 'data'\n",
+            Edit(old_text="missing", new_text="replacement", expected_matches=1, purpose="missing"),
+            {"edit_index": 0, "expected_matches": 1, "actual_matches": 0},
+        ),
+    ],
+)
+def test_apply_edits_reports_each_anchor_match_mismatch(
+    source: str, edit: Edit, expected_details: dict[str, int]
+) -> None:
+    with pytest.raises(EditApplicationError) as error:
+        apply_edits(source, [edit])
+    assert error.value.details == expected_details
 
 
 def test_apply_edits_rejects_overlapping_anchors_without_partial_result() -> None:
@@ -24,12 +46,6 @@ def test_apply_edits_rejects_overlapping_anchors_without_partial_result() -> Non
     ]
     with pytest.raises(EditApplicationError, match="overlapping"):
         apply_edits("value = 'data'\n", edits)
-
-
-def test_apply_edits_rejects_a_missing_anchor() -> None:
-    with pytest.raises(EditApplicationError) as error:
-        apply_edits("value = 'data'\n", [Edit(old_text="missing", new_text="replacement", expected_matches=1, purpose="missing")])
-    assert error.value.details["actual_matches"] == 0
 
 
 def test_apply_edits_matches_single_line_import_not_longer_import_prefixes() -> None:

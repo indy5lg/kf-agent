@@ -208,15 +208,15 @@ def test_agent_failure_does_not_invoke_repair(monkeypatch: pytest.MonkeyPatch) -
     assert not repair_called
 
 
-def test_invalid_agent_response_can_use_single_repair(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: (_ for _ in ()).throw(ValueError("bad JSON")))
+@pytest.mark.parametrize(
+    "error",
+    [ValueError("bad JSON"), OutputParserException("invalid JSON")],
+)
+def test_retryable_agent_response_failures_can_use_a_single_repair(
+    monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: (_ for _ in ()).throw(error))
     monkeypatch.setattr("indy_agent.graph.request_repair", lambda **_: proposal())
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.SUCCESS
     assert result["attempt_count"] == 2
-
-
-def test_output_parser_failure_is_retryable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("indy_agent.graph.request_proposal", lambda _: (_ for _ in ()).throw(OutputParserException("invalid JSON")))
-    monkeypatch.setattr("indy_agent.graph.request_repair", lambda **_: proposal())
-    assert graph.invoke({"source_script": SOURCE})["status"] == RefactorStatus.SUCCESS

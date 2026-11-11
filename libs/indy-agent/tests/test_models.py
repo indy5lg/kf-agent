@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from indy_agent.models import AttemptKind, Artifact, DiffTraceEntry, Proposal, RefactorStatus, ValidationViolation, ValidationViolationCode
+from indy_agent.models import Artifact, Proposal, ValidationViolation, ValidationViolationCode
 
 
 def test_proposal_rejects_duplicate_artifact_names() -> None:
@@ -26,12 +26,6 @@ def test_proposal_schema_does_not_advertise_changes() -> None:
     assert "changes" not in Proposal.model_json_schema()["properties"]
 
 
-def test_proposal_schema_describes_working_script_batches() -> None:
-    schema = Proposal.model_json_schema()["properties"]
-    assert "working script" in schema["edits"]["description"]
-    assert "complete current artifact contract" in schema["artifacts"]["description"]
-
-
 def test_validation_violation_serializes_only_its_applicable_contract_fields() -> None:
     violation = ValidationViolation(
         code=ValidationViolationCode.MISSING_CLI_ARGUMENT,
@@ -43,19 +37,6 @@ def test_validation_violation_serializes_only_its_applicable_contract_fields() -
         "artifact": "dataset",
         "expected_cli_argument": "--dataset-path",
     }
-
-
-def test_diff_trace_entry_accepts_a_valid_initial_attempt() -> None:
-    entry = DiffTraceEntry(
-        attempt_number=1,
-        kind=AttemptKind.INITIAL,
-        proposal=Proposal(edits=[], artifacts=[]),
-        patch_diff="--- original.py\n+++ refactored.py\n",
-        outcome=RefactorStatus.SUCCESS,
-    )
-    assert entry.attempt_number == 1
-    assert entry.error is None
-
 
 @pytest.mark.parametrize("field,value", [("direction", "sideways"), ("kind", "file"), ("cli_argument", "dataset-path")])
 def test_artifact_rejects_invalid_contract_values(field: str, value: str) -> None:

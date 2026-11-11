@@ -22,25 +22,42 @@ def test_validation_rejects_invalid_python_without_execution() -> None:
     assert "violations" not in error.value.details
 
 
-def test_validation_rejects_invalid_indentation() -> None:
-    with pytest.raises(SourceValidationError) as error:
-        validate_refactored_script("if True:\nprint('bad')\n", ARTIFACTS)
-    assert error.value.invalid_code
-
-
 @pytest.mark.parametrize(
-    "source,code",
+    "source,expected_violation",
     [
-        ("args = object()\nprint(args.dataset_path)\n", ValidationViolationCode.MISSING_ARGPARSE_IMPORT),
-        ("import argparse\nparser = argparse.ArgumentParser()\nargs = parser.parse_args()\n", ValidationViolationCode.MISSING_CLI_ARGUMENT),
-        ("import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--dataset-path')\nargs = parser.parse_args()\n", ValidationViolationCode.MISSING_ARGUMENT_DESTINATION),
+        (
+            "parser = object()\nparser.add_argument('--dataset-path')\nargs = parser.parse_args()\nprint(args.dataset_path)\n",
+            {"code": ValidationViolationCode.MISSING_ARGPARSE_IMPORT},
+        ),
+        (
+            "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--dataset-path')\nprint(args.dataset_path)\n",
+            {"code": ValidationViolationCode.MISSING_PARSE_ARGS},
+        ),
+        (
+            "import argparse\nparser = argparse.ArgumentParser()\nargs = parser.parse_args()\nprint(args.dataset_path)\n",
+            {
+                "code": ValidationViolationCode.MISSING_CLI_ARGUMENT,
+                "artifact": "dataset",
+                "expected_cli_argument": "--dataset-path",
+            },
+        ),
+        (
+            "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--dataset-path')\nargs = parser.parse_args()\n",
+            {
+                "code": ValidationViolationCode.MISSING_ARGUMENT_DESTINATION,
+                "artifact": "dataset",
+                "expected_destination": "args.dataset_path",
+            },
+        ),
     ],
 )
-def test_validation_rejects_mismatched_contract(source: str, code: ValidationViolationCode) -> None:
+def test_validation_reports_an_isolated_contract_violation(
+    source: str, expected_violation: dict[str, object]
+) -> None:
     with pytest.raises(SourceValidationError) as error:
         validate_refactored_script(source, ARTIFACTS)
     assert not error.value.invalid_code
-    assert error.value.details["violations"][0]["code"] == code
+    assert error.value.details == {"violations": [expected_violation]}
 
 
 def test_validation_collects_every_artifact_violation_in_proposal_order() -> None:

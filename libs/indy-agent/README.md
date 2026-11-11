@@ -28,11 +28,18 @@ LangSmith environment variables only when tracing is desired.
 uv run --project libs/indy-agent pytest libs/indy-agent/tests
 ```
 
-The Ollama integration test is skipped unless explicitly requested. It also skips if
-the configured endpoint or model is unavailable:
+The quick baseline Ollama smoke test is skipped unless explicitly requested. It
+also skips if the configured endpoint or model is unavailable:
 
 ```bash
 RUN_OLLAMA_INTEGRATION=1 uv run --project libs/indy-agent pytest libs/indy-agent/tests -m integration
+```
+
+To test the baseline script plus both whitespace-only spacing variants, run the
+separate comprehensive check:
+
+```bash
+RUN_OLLAMA_INTEGRATION=1 uv run --project libs/indy-agent pytest libs/indy-agent/tests -m comprehensive_integration
 ```
 
 ## Run the local agent server
@@ -85,7 +92,7 @@ patch outcomes. Its `proposal` contains the complete artifact contract at
 are no top-level `artifacts` or `changes` result fields.
 
 When deterministic proposal, edit, syntax, or artifact-contract validation
-fails, the graph may request one repair proposal. The repair receives the
+fails, the graph may request up to three repair proposals. The repair receives the
 original source as reference, the current working script as its only edit
 target, the current artifact contract, and the structured failure. Ollama
 service failures and `no_artifacts_found` are terminal and are not retried.

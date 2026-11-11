@@ -51,4 +51,7 @@ def test_request_repair_uses_the_same_proposal_schema_and_marks_capture(tmp_path
     messages = model.with_structured_output.return_value.invoke.call_args.args[0]
     repair_context = str(messages[1].content)
     assert "x = args.dataset_path" in repair_context
-    assert "prior edit lists" in repair_context
+    assert json.dumps(
+        {"stage": "validate_result", "message": "missing flag", "details": {}},
+        ensure_ascii=False,
+    ) in repair_context
