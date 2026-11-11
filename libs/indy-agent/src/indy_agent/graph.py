@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 from langchain_core.exceptions import OutputParserException
 from pydantic import ValidationError
 
+from indy_agent.dependencies import analyze_dependencies
 from indy_agent.edits import EditApplicationError, apply_edits, create_diff
 from indy_agent.models import (
     AttemptKind,
@@ -74,6 +75,7 @@ def initialize_working_script(state: RefactorState) -> dict:
         "diff_trace": [],
         "attempt_count": 0,
         "repair_feedback": None,
+        "dependency_analysis": None,
         "status": RefactorStatus.PENDING,
         "error": None,
     }
@@ -215,6 +217,11 @@ def validate_result(state: RefactorState) -> dict:
     }
 
 
+def extract_dependencies(state: RefactorState) -> dict:
+    """Analyze the validated final script without changing transformation data."""
+    return {"dependency_analysis": analyze_dependencies(state["working_script"])}
+
+
 def _should_repair(state: RefactorState) -> bool:
     return state["status"] in RETRYABLE_STATUSES and state["attempt_count"] < MAX_PROPOSAL_ATTEMPTS
 
@@ -231,7 +238,9 @@ def _after_application(state: RefactorState) -> Literal["validate_result", "repa
     return "repair_proposal" if _should_repair(state) else "end"
 
 
-def _after_validation(state: RefactorState) -> Literal["repair_proposal", "end"]:
+def _after_validation(state: RefactorState) -> Literal["repair_proposal", "extract_dependencies", "end"]:
+    if state["status"] == RefactorStatus.SUCCESS:
+        return "extract_dependencies"
     return "repair_proposal" if _should_repair(state) else "end"
 
 
@@ -241,11 +250,13 @@ builder.add_node("propose_edits", propose_edits)
 builder.add_node("repair_proposal", repair_proposal)
 builder.add_node("apply_edits", apply_proposed_edits)
 builder.add_node("validate_result", validate_result)
+builder.add_node("extract_dependencies", extract_dependencies)
 builder.add_edge(START, "initialize_working_script")
 builder.add_edge("initialize_working_script", "propose_edits")
 builder.add_conditional_edges("propose_edits", _after_attempt, {"apply_edits": "apply_edits", "repair_proposal": "repair_proposal", "end": END})
 builder.add_conditional_edges("repair_proposal", _after_attempt, {"apply_edits": "apply_edits", "repair_proposal": "repair_proposal", "end": END})
 builder.add_conditional_edges("apply_edits", _after_application, {"validate_result": "validate_result", "repair_proposal": "repair_proposal", "end": END})
-builder.add_conditional_edges("validate_result", _after_validation, {"repair_proposal": "repair_proposal", "end": END})
+builder.add_conditional_edges("validate_result", _after_validation, {"repair_proposal": "repair_proposal", "extract_dependencies": "extract_dependencies", "end": END})
+builder.add_edge("extract_dependencies", END)
 
 graph = builder.compile()

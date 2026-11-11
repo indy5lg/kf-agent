@@ -94,6 +94,18 @@ class RefactorError(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
 
 
+class DependencyAnalysis(BaseModel):
+    """Deterministic requirements information derived from a working script."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    imported_modules: list[str]
+    standard_library_modules: list[str]
+    requirements: list[str]
+    requirements_text: str
+    unresolved_modules: list[str]
+
+
 class DiffTraceEntry(BaseModel):
     """One bounded proposal attempt and its deterministic outcome."""
 
@@ -115,5 +127,6 @@ class RefactorState(TypedDict, total=False):
     attempt_count: int
     attempt_kind: AttemptKind
     repair_feedback: RefactorError | None
+    dependency_analysis: DependencyAnalysis | None
     status: RefactorStatus
     error: RefactorError | None

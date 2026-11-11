@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from indy_agent.models import Artifact, Proposal, ValidationViolation, ValidationViolationCode
+from indy_agent.models import Artifact, DependencyAnalysis, Proposal, ValidationViolation, ValidationViolationCode
 
 
 def test_proposal_rejects_duplicate_artifact_names() -> None:
@@ -36,6 +36,23 @@ def test_validation_violation_serializes_only_its_applicable_contract_fields() -
         "code": "missing_cli_argument",
         "artifact": "dataset",
         "expected_cli_argument": "--dataset-path",
+    }
+
+
+def test_dependency_analysis_serializes_requirements_and_unresolved_modules() -> None:
+    analysis = DependencyAnalysis(
+        imported_modules=["torch", "unknown"],
+        standard_library_modules=[],
+        requirements=["torch"],
+        requirements_text="torch\n",
+        unresolved_modules=["unknown"],
+    )
+    assert analysis.model_dump(mode="json") == {
+        "imported_modules": ["torch", "unknown"],
+        "standard_library_modules": [],
+        "requirements": ["torch"],
+        "requirements_text": "torch\n",
+        "unresolved_modules": ["unknown"],
     }
 
 @pytest.mark.parametrize("field,value", [("direction", "sideways"), ("kind", "file"), ("cli_argument", "dataset-path")])

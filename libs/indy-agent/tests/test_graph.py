@@ -61,6 +61,7 @@ def test_graph_success_initializes_working_script_and_trace(monkeypatch: pytest.
     assert result["diff_trace"][0].outcome == RefactorStatus.SUCCESS
     assert result["diff_trace"][0].patch_diff
     assert result["diff"]
+    assert result["dependency_analysis"].requirements == ["torch"]
 
 
 def test_graph_short_circuits_when_no_artifacts(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -69,6 +70,7 @@ def test_graph_short_circuits_when_no_artifacts(monkeypatch: pytest.MonkeyPatch)
     assert result["status"] == RefactorStatus.NO_ARTIFACTS_FOUND
     assert result["working_script"] == SOURCE
     assert len(result["diff_trace"]) == 1
+    assert result["dependency_analysis"] is None
 
 
 def test_graph_repairs_missing_argparse_contract(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -206,6 +208,7 @@ def test_agent_failure_does_not_invoke_repair(monkeypatch: pytest.MonkeyPatch) -
     result = graph.invoke({"source_script": SOURCE})
     assert result["status"] == RefactorStatus.AGENT_FAILURE
     assert not repair_called
+    assert result["dependency_analysis"] is None
 
 
 @pytest.mark.parametrize(

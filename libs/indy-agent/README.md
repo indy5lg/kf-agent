@@ -91,6 +91,14 @@ patch outcomes. Its `proposal` contains the complete artifact contract at
 `proposal.artifacts`, using `dataset`, `model`, `metrics`, or `artifact`; there
 are no top-level `artifacts` or `changes` result fields.
 
+Successful results also include `dependency_analysis`, generated
+deterministically from the final `working_script`. Its `requirements` list and
+`requirements_text` provide sorted, unpinned requirements content for a later
+container build; `unresolved_modules` identifies non-standard imports that are
+not in the agent's explicit import-to-PyPI mapping. The first version does not
+infer dynamic imports, versions, extras, package indexes, CUDA variants, or
+local project packages.
+
 When deterministic proposal, edit, syntax, or artifact-contract validation
 fails, the graph may request up to three repair proposals. The repair receives the
 original source as reference, the current working script as its only edit

@@ -121,6 +121,13 @@ def _refactor_failure(
         return diagnostic
     if not result["diff"] or not result["diff_trace"]:
         return diagnostic
+    analysis = result.get("dependency_analysis")
+    if analysis is None:
+        return diagnostic
+    if analysis.requirements != ["torch", "torchvision"]:
+        return diagnostic
+    if analysis.unresolved_modules:
+        return diagnostic
     return None
 
 
