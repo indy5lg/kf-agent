@@ -88,7 +88,12 @@ export function requestUploadUrl(project: string): Promise<{ upload_url: string 
 }
 
 export async function uploadFile(uploadUrl: string, file: File): Promise<void> {
-  const response = await fetch(uploadUrl, { method: "PUT", body: file });
+  // The upload URL points back at our API, which authenticates via the session cookie.
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    credentials: "include",
+  });
   if (!response.ok) {
     throw new ApiError(response.status, `Upload failed: ${response.statusText}`);
   }

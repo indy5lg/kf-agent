@@ -12,4 +12,4 @@ package = false
 members = ["apps/*", "libs/*"]
 
 [dependency-groups]
-dev = ["pytest>=8.0", "httpx>=0.27"]
+dev = ["pytest>=8.0", "httpx>=0.27", "moto[s3]>=5.0"]

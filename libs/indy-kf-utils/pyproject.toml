@@ -7,7 +7,7 @@ authors = [
     { name = "Santiago Acosta Rodriguez", email = "sacosta5@students.kennesaw.edu" }
 ]
 requires-python = ">=3.12"
-dependencies = ["kfp>=2.0", "httpx>=0.27"]
+dependencies = ["kfp>=2.0", "httpx>=0.27", "boto3>=1.34"]
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]

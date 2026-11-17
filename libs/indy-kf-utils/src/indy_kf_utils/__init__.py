@@ -8,7 +8,7 @@ from indy_kf_utils.kubeflow import (
 )
 from indy_kf_utils.seaweedfs import (
     FakeSeaweedfsClient,
-    RealSeaweedfsClient,
+    S3SeaweedfsClient,
     ScriptNotUploaded,
     SeaweedfsClient,
     get_seaweedfs_client,
@@ -23,7 +23,7 @@ __all__ = [
     "get_kubeflow_client",
     "SeaweedfsClient",
     "FakeSeaweedfsClient",
-    "RealSeaweedfsClient",
+    "S3SeaweedfsClient",
     "ScriptNotUploaded",
     "get_seaweedfs_client",
 ]

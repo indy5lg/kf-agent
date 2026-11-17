@@ -6,7 +6,7 @@ from indy_kf_utils import ScriptNotUploaded
 
 from api.dependencies import get_current_user
 from api.runs import run_store, start_run
-from api.schemas import RunStatusResponse, StartRunRequest
+from api.schemas import RunStatusResponse, StartRunRequest, storage_username
 
 router = APIRouter()
 
@@ -15,7 +15,7 @@ router = APIRouter()
 def create_run(
     body: StartRunRequest, current_user: User = Depends(get_current_user)
 ) -> dict[str, str]:
-    username = current_user.email.split("@")[0]
+    username = storage_username(current_user)
     try:
         run_id = start_run(username, body.project, body.preset_prompt)
     except ScriptNotUploaded as exc:

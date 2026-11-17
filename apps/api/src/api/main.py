@@ -10,7 +10,6 @@ from indy_db.engine import engine  # noqa: E402
 from indy_db.models import Base  # noqa: E402
 
 from api.routers.auth import router as auth_router  # noqa: E402
-from api.routers.fake_storage import router as fake_storage_router  # noqa: E402
 from api.routers.runs import router as runs_router  # noqa: E402
 from api.routers.uploads import router as uploads_router  # noqa: E402
 
@@ -34,4 +33,3 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(uploads_router)
 app.include_router(runs_router)
-app.include_router(fake_storage_router)

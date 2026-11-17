@@ -2,27 +2,30 @@ import os
 from functools import lru_cache
 from typing import Protocol
 
+SCRIPT_FILENAME = "script.py"
+
+# S3 error codes that mean "the object (or its bucket) isn't there".
+_MISSING_CODES = ("NoSuchKey", "NoSuchBucket", "404", "NotFound")
+
 
 class ScriptNotUploaded(Exception):
     pass
 
 
 class SeaweedfsClient(Protocol):
-    def build_upload_url(self, username: str, project: str) -> str: ...
+    def upload(self, username: str, project: str, data: bytes) -> None: ...
     def fetch_script(self, username: str, project: str) -> bytes: ...
 
 
+def object_key(username: str, project: str) -> str:
+    return f"{username}/{project}/{SCRIPT_FILENAME}"
+
+
 class FakeSeaweedfsClient:
-    """In-memory test double. `upload()` is a test seam only — production
-    code never calls it, since the real upload happens via a direct browser
-    PUT to the URL `build_upload_url()` returns, bypassing this client."""
+    """In-memory test double used when SEAWEEDFS_CLIENT=fake (the default)."""
 
     def __init__(self) -> None:
         self._storage: dict[tuple[str, str], bytes] = {}
-
-    def build_upload_url(self, username: str, project: str) -> str:
-        base_url = os.environ.get("FAKE_SEAWEEDFS_UPLOAD_BASE_URL", "http://localhost:8000")
-        return f"{base_url.rstrip('/')}/fake-storage/{username}/{project}"
 
     def upload(self, username: str, project: str, data: bytes) -> None:
         self._storage[(username, project)] = data
@@ -34,22 +37,69 @@ class FakeSeaweedfsClient:
             raise ScriptNotUploaded(f"{username}/{project}") from None
 
 
-class RealSeaweedfsClient:
-    def __init__(self, base_url: str) -> None:
-        self._base_url = base_url.rstrip("/")
+class S3SeaweedfsClient:
+    """Talks to the SeaweedFS S3 gateway. Only the API server holds the
+    credentials; browsers upload through the API, never to SeaweedFS directly."""
 
-    def build_upload_url(self, username: str, project: str) -> str:
-        return f"{self._base_url}/{username}/{project}/script.py"
+    def __init__(
+        self, endpoint_url: str, access_key: str, secret_key: str, bucket: str, s3=None
+    ) -> None:
+        self._bucket = bucket
+        if s3 is None:
+            import boto3
+            from botocore.client import Config
+
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=endpoint_url,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                # SeaweedFS has no real region; boto3 just needs one to sign with.
+                region_name="us-east-1",
+                config=Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style": "path"},
+                    connect_timeout=5,
+                    read_timeout=30,
+                ),
+            )
+        self._s3 = s3
+        self._bucket_ready = False
+
+    def _ensure_bucket(self) -> None:
+        if self._bucket_ready:
+            return
+        from botocore.exceptions import ClientError
+
+        try:
+            self._s3.head_bucket(Bucket=self._bucket)
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") not in _MISSING_CODES:
+                raise
+            self._s3.create_bucket(Bucket=self._bucket)
+        self._bucket_ready = True
+
+    def upload(self, username: str, project: str, data: bytes) -> None:
+        self._ensure_bucket()
+        self._s3.put_object(
+            Bucket=self._bucket,
+            Key=object_key(username, project),
+            Body=data,
+            ContentType="text/x-python",
+        )
 
     def fetch_script(self, username: str, project: str) -> bytes:
-        import httpx
+        from botocore.exceptions import ClientError
 
-        url = self.build_upload_url(username, project)
-        response = httpx.get(url)
-        if response.status_code == 404:
-            raise ScriptNotUploaded(f"{username}/{project}")
-        response.raise_for_status()
-        return response.content
+        try:
+            response = self._s3.get_object(
+                Bucket=self._bucket, Key=object_key(username, project)
+            )
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in _MISSING_CODES:
+                raise ScriptNotUploaded(f"{username}/{project}") from exc
+            raise
+        return response["Body"].read()
 
 
 @lru_cache
@@ -57,6 +107,11 @@ def get_seaweedfs_client() -> SeaweedfsClient:
     mode = os.environ.get("SEAWEEDFS_CLIENT", "fake")
     if mode == "fake":
         return FakeSeaweedfsClient()
-    if mode == "real":
-        return RealSeaweedfsClient(os.environ["SEAWEEDFS_BASE_URL"])
-    raise ValueError(f"Unknown SEAWEEDFS_CLIENT: {mode!r}")
+    if mode == "s3":
+        return S3SeaweedfsClient(
+            endpoint_url=os.environ["SEAWEEDFS_S3_ENDPOINT"],
+            access_key=os.environ["SEAWEEDFS_ACCESS_KEY"],
+            secret_key=os.environ["SEAWEEDFS_SECRET_KEY"],
+            bucket=os.environ["SEAWEEDFS_BUCKET"],
+        )
+    raise ValueError(f"Unknown SEAWEEDFS_CLIENT: {mode!r} (expected 'fake' or 's3')")
