@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ChatPage from "./page";
 import * as api from "@/lib/api";
@@ -24,6 +24,7 @@ vi.mock("@/lib/api", () => ({
     "Convert to a Kubeflow pipeline",
   ],
   getCurrentUser: vi.fn(),
+  logout: vi.fn(),
   requestUploadUrl: vi.fn(),
   uploadFile: vi.fn(),
   startRun: vi.fn(),
@@ -41,6 +42,7 @@ beforeEach(() => {
     upload_url: "https://seaweedfs.example/alice/proj1/script.py",
   });
   vi.mocked(api.uploadFile).mockResolvedValue(undefined);
+  vi.mocked(api.logout).mockResolvedValue(undefined);
   vi.mocked(api.startRun).mockResolvedValue({ run_id: "run-123" });
   vi.mocked(api.getRunStatus).mockResolvedValue({
     stage: "queued",
@@ -102,5 +104,75 @@ describe("ChatPage preset prompt send", () => {
       file
     );
     expect(api.startRun).toHaveBeenCalledWith("proj1", "Explain this pipeline");
+  });
+});
+
+describe("ChatPage logout", () => {
+  it("logs out and returns to /login", async () => {
+    render(<ChatPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Log out" }));
+
+    expect(api.logout).toHaveBeenCalled();
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
+  });
+
+  it("shows an error and stays on the page if logout fails", async () => {
+    vi.mocked(api.logout).mockRejectedValue(new api.ApiError(500, "Server error"));
+    render(<ChatPage />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByText(/Could not log out/)).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalledWith("/login");
+  });
+});
+
+describe("ChatPage instructions", () => {
+  it("shows upload instructions before anything is sent", async () => {
+    render(<ChatPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "How to run your ML script on Kubeflow" })
+    ).toBeInTheDocument();
+  });
+});
+
+describe("ChatPage drag-and-drop", () => {
+  it("accepts a dropped .py file and enables sending", async () => {
+    render(<ChatPage />);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("Project"), "proj1");
+
+    fireEvent.drop(screen.getByTestId("file-drop-zone"), {
+      dataTransfer: { files: [makeFile()] },
+    });
+
+    expect(screen.getByText("pipeline.py")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Explain this pipeline" })).toBeEnabled();
+  });
+
+  it("rejects a dropped non-Python file", async () => {
+    render(<ChatPage />);
+    await screen.findByLabelText("Project");
+
+    fireEvent.drop(screen.getByTestId("file-drop-zone"), {
+      dataTransfer: { files: [new File(["x"], "notes.txt", { type: "text/plain" })] },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Only Python (.py) files");
+    expect(screen.queryByText("notes.txt")).not.toBeInTheDocument();
+  });
+
+  it("lets the user remove a staged file", async () => {
+    render(<ChatPage />);
+    const user = userEvent.setup();
+    await user.upload(await screen.findByLabelText("Attach file"), makeFile());
+
+    await user.click(screen.getByRole("button", { name: "Remove file" }));
+
+    expect(screen.queryByText("pipeline.py")).not.toBeInTheDocument();
   });
 });
