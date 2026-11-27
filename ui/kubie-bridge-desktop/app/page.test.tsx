@@ -21,6 +21,7 @@ describe("Landing page content", () => {
       "Elvin Pineda",
       "Santiago Acosta Rodriguez",
       "Andres Ferrer",
+      "Keaton Surfield",
     ]) {
       expect(screen.getByText(name)).toBeInTheDocument();
     }

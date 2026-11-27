@@ -6,6 +6,7 @@ const teamMembers = [
   "Elvin Pineda",
   "Santiago Acosta Rodriguez",
   "Andres Ferrer",
+  "Keaton Surfield",
 ];
 
 const slides = [

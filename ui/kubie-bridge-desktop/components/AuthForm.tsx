@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { KubieMark } from "./KubieMark";
 
 type AuthFormProps = {
   title: string;
@@ -43,13 +44,7 @@ export function AuthForm({
         className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-black/[.08] bg-white p-8 dark:border-white/[.145] dark:bg-zinc-950"
       >
         <div className="flex items-center gap-2">
-          <span
-            data-testid="kubie-mark"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background"
-            aria-hidden="true"
-          >
-            K
-          </span>
+          <KubieMark />
           <span className="text-lg font-semibold text-black dark:text-zinc-50">
             Kubie-Bridge
           </span>
