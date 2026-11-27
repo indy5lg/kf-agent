@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { formatFileSize } from "@/lib/formatFileSize";
 
 const ACCEPTED_EXTENSION = ".py";
 
@@ -46,6 +47,9 @@ export function FileDropZone({ file, onFileChange, disabled = false }: FileDropZ
         }}
         onDragLeave={(e) => {
           e.preventDefault();
+          // Moving between the zone's own children also fires dragleave; only clear
+          // the highlight once the pointer has actually left the zone.
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
           setIsDragging(false);
         }}
         onDrop={(e) => {
@@ -62,7 +66,10 @@ export function FileDropZone({ file, onFileChange, disabled = false }: FileDropZ
       >
         {file ? (
           <>
-            <span className="font-medium text-black dark:text-zinc-50">{file.name}</span>
+            <span className="flex items-center gap-2">
+              <span className="font-medium text-black dark:text-zinc-50">{file.name}</span>
+              <span className="text-zinc-500">{formatFileSize(file.size)}</span>
+            </span>
             <button
               type="button"
               onClick={clear}

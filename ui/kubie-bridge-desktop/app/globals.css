@@ -24,3 +24,72 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Processing cube: a small CSS 3D cube that hops and flips a quarter turn. */
+@theme {
+  --animate-cube-hop: cube-hop 1.6s ease-in-out infinite;
+  --animate-cube-tumble: cube-tumble 1.6s ease-in-out infinite;
+
+  @keyframes cube-hop {
+    0%,
+    100% {
+      transform: translateY(6px) scaleY(0.94);
+    }
+    45%,
+    55% {
+      transform: translateY(-16px) scaleY(1);
+    }
+  }
+
+  @keyframes cube-tumble {
+    0%,
+    20% {
+      transform: rotateX(-30deg) rotateY(45deg) rotateZ(0deg);
+    }
+    80%,
+    100% {
+      transform: rotateX(-30deg) rotateY(45deg) rotateZ(90deg);
+    }
+  }
+}
+
+:root {
+  --cube-top: #3f3f46;
+  --cube-side-a: #18181b;
+  --cube-side-b: #27272a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cube-top: #fafafa;
+    --cube-side-a: #a1a1aa;
+    --cube-side-b: #d4d4d8;
+  }
+}
+
+.kubie-cube-scene {
+  width: 48px;
+  height: 48px;
+  perspective: 400px;
+}
+
+.kubie-cube {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  transform-style: preserve-3d;
+  transform: rotateX(-30deg) rotateY(45deg);
+}
+
+.kubie-cube-face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.kubie-cube-face:nth-child(1) { background: var(--cube-side-b); transform: translateZ(24px); }
+.kubie-cube-face:nth-child(2) { background: var(--cube-side-a); transform: rotateY(90deg) translateZ(24px); }
+.kubie-cube-face:nth-child(3) { background: var(--cube-side-b); transform: rotateY(180deg) translateZ(24px); }
+.kubie-cube-face:nth-child(4) { background: var(--cube-side-a); transform: rotateY(-90deg) translateZ(24px); }
+.kubie-cube-face:nth-child(5) { background: var(--cube-top); transform: rotateX(90deg) translateZ(24px); }
+.kubie-cube-face:nth-child(6) { background: var(--cube-side-a); transform: rotateX(-90deg) translateZ(24px); }
